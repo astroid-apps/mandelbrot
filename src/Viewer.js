@@ -7,31 +7,28 @@
 module.exports = function(elementId,range,draw,status){
 	
 	const div = document.getElementById(elementId);
-	
-	//画面中心の座標(X,Y)
-	let cx = range.x.init;
-	let cy = range.y.init;
-	
-	//縮尺[px/1]
-	let scale = range.scale.init;
+	const width = div.clientWidth;
+	const height = div.clientHeight;
 	
 	const canvas = document.createElement("canvas");
-	div.appendChild(canvas);
-	width = div.clientWidth;
-	height = div.clientHeight;
 	canvas.width = width;
 	canvas.height = height;
-	
 	canvas.style.cursor = "crosshair";
 	canvas.style.touchAction = "none";
+	div.appendChild(canvas);
 	
 	const ctx = canvas.getContext("2d");
 	ctx.fillStyle = "rgba(0,0,0,1.0)";
 	ctx.strokeStyle = "rgba(0,0,0,1.0)";
 	
+	//原点をcanvas中心に移動
 	ctx.translate(width * 0.5, height * 0.5);
-	ctx.scale(scale, -scale);
-	ctx.translate(-cx, -cy);
+	
+	//縮尺[px/1]、Y軸を上下逆転
+	ctx.scale(range.scale.init, -range.scale.init);
+	
+	//画面中心の座標(X,Y)を設定
+	ctx.translate(-range.x.init, -range.y.init);
 	
 	//--------------------------------------------------
 	//座標変換
