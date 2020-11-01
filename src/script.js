@@ -6,14 +6,18 @@
 const Viewer = require("./Viewer.js");
 const mandelbrot = require("./mandelbrot.js");
 
-const vw = new Viewer("viewer",{
+const vw = new Viewer(document.getElementById("viewer"),{
 	
 	x: {
 		init: -0.5,
+		min: -2,
+		max: 1,
 	},
 	
 	y: {
 		init: 0.0,
+		min: -1.5,
+		max: 1.5,
 	},
 	
 	scale: {
