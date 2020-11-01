@@ -6,6 +6,16 @@ The mandelbrot set viewer
 # Demo
 https://astroid-apps.github.io/mandelbrot/dist/
 
+# Sample
+
+![sample](./sample/sample1.png)
+
+![sample](./sample/sample2.png)
+
+![sample](./sample/sample3.png)
+
+![sample](./sample/sample4.png)
+
 # Link
 https://en.wikipedia.org/wiki/Mandelbrot_set
 
