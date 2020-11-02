@@ -3,24 +3,7 @@
 	2020/10/26 新規作成
 */
 
-//XY目盛り
-const drawGrid = function(ctx,xmin,xmax,dx,ymin,ymax,dy){
-	for(let x = xmin; x <= xmax; x += dx){
-		ctx.beginPath();
-		ctx.moveTo(x,ymin);
-		ctx.lineTo(x,ymax);
-		ctx.closePath();
-		ctx.stroke();
-	}
-	
-	for(let y = ymin; y <= ymax; y += dy){
-		ctx.beginPath();
-		ctx.moveTo(xmin,y);
-		ctx.lineTo(xmax,y);
-		ctx.closePath();
-		ctx.stroke();
-	}
-};
+const pinchTransform = require("./pinchTransform.js");
 
 //表示画面
 module.exports = function(element,view,draw,status){
@@ -36,7 +19,7 @@ module.exports = function(element,view,draw,status){
 	const canvas = document.createElement("canvas");
 	canvas.width = width;
 	canvas.height = height;
-	canvas.style.cursor = "crosshair";
+	canvas.style.cursor = "move";
 	canvas.style.touchAction = "none";
 	element.appendChild(canvas);
 	
@@ -129,8 +112,6 @@ module.exports = function(element,view,draw,status){
 	let pointers = [];	//クリックまたはタップされたポインターの位置
 	
 	canvas.addEventListener("pointerdown",function(e){
-		canvas.style.cursor = "move";
-		
 		pointers.push({
 			id: e.pointerId,
 			si: e.offsetX,
@@ -163,49 +144,27 @@ module.exports = function(element,view,draw,status){
 			
 		}else if(pointers.length == 1){
 			setShift(e);
-			movingUpdate(pointers[0].di,pointers[0].dj);
+			movingUpdate(pointers[0]);
 			
 		}else if(pointers.length == 2){
 			setShift(e);
-			movingUpdate2(pointers[0],pointers[1]);
+			movingUpdate(pointers[0],pointers[1]);
 		}
 	});
 	
-	//座標変換を確定させる
-	const fixTransform = function(){
+	//ポインター終了時の動作
+	const pointerend = function(e){
 		
+		//座標変換を確定させる
 		if(pointers.length == 1){
-			//p0がp1に一致するように平行移動
-			const p0 = getXY(pointers[0].si,pointers[0].sj);
-			const p1 = getXY(pointers[0].ei,pointers[0].ej);
-			ctx.translate(p1.x - p0.x,p1.y - p0.y);
+			pinchTransform.XY(ctx,pointers[0]);
 			
 		}else if(pointers.length == 2){
-			//p0sがp0e、p1sがp1eに一致するように平行移動回転拡大
-			const p0s = getXY(pointers[0].si,pointers[0].sj);
-			const p0e = getXY(pointers[0].ei,pointers[0].ej);
-			const p1s = getXY(pointers[1].si,pointers[1].sj);
-			const p1e = getXY(pointers[1].ei,pointers[1].ej);
-			
-			ctx.translate(p0e.x, p0e.y);
-			
-			//p0を中心としてvsがveに一致するように回転拡大する座標変換
-			//移動前のp0→p1ベクトルvs、移動後のp0→p1ベクトルve
-			const vsi = p1s.x - p0s.x;
-			const vsj = p1s.y - p0s.y;
-			const vei = p1e.x - p0e.x;
-			const vej = p1e.y - p0e.y;
-			const k = 1 / (vsi * vsi + vsj * vsj);
-			const ad = vei * vsi + vej * vsj;
-			const bc = vej * vsi - vei * vsj;
-			ctx.transform(ad * k, bc * k, -bc * k, ad * k, 0, 0);
-			
-			ctx.translate(-p0e.x, -p0e.y);
-
-			//p0の位置を合わせる
-			ctx.translate(p0e.x - p0s.x, p0e.y - p0s.y);
+			pinchTransform.XY(ctx,pointers[0],pointers[1]);
 			
 			//ズーム制約
+			const p0s = getXY(pointers[0].si,pointers[0].sj);
+			const p1s = getXY(pointers[1].si,pointers[1].sj);
 			const cx = (p0s.x + p1s.x) * 0.5;
 			const cy = (p0s.y + p1s.y) * 0.5;
 			clampScale({x:cx, y:cy});
@@ -213,16 +172,9 @@ module.exports = function(element,view,draw,status){
 		
 		clampXY();
 		updateMatrix();
-	}
-	
-	//ポインター終了時の動作
-	const pointerend = function(e){
-		fixTransform();
 		update();
 		
 		pointers = [];
-		
-		canvas.style.cursor = "crosshair";
 	};
 	
 	window.addEventListener("pointerup",pointerend);
@@ -249,12 +201,24 @@ module.exports = function(element,view,draw,status){
 	});
 	
 	//--------------------------------------------------
+	//status表示(現在のctxにおける画面中心のXY座標とScale)
+	//--------------------------------------------------
+	
+	const info = function(){
+		const i = width * 0.5;
+		const j = height * 0.5;
+		const m = ctx.getTransform().invertSelf();
+		const x = m.a * i + m.c * j + m.e;
+		const y = m.b * i + m.d * j + m.f;
+		const s = 1 / Math.sqrt(m.a * m.a + m.b * m.b);
+		status("X=" + x.toFixed(8) + "<br>Y=" + y.toFixed(8) + "<br>Scale=" + s.toFixed(1) + "[px/1]");
+	};
+	
+	//--------------------------------------------------
 	//描画
 	//--------------------------------------------------
 	
-	//画面に表示された画像(移動中に表示させる)
-	const image = new Image();
-	
+	//画面中心の「＋」表示(IJ座標系で処理)
 	const drawCenter = function(){
 		ctx.save();
 		ctx.resetTransform();
@@ -280,64 +244,51 @@ module.exports = function(element,view,draw,status){
 		ctx.restore();
 	};
 	
-	//status表示
-	const info = function(){
-		drawCenter();
-		const p = getXY(width * 0.5,height * 0.5);
-		const scale = getScale();
+	//XY目盛り
+	const drawGrid = function(xmin,xmax,dx,ymin,ymax,dy){
+		for(let x = xmin; x <= xmax; x += dx){
+			ctx.beginPath();
+			ctx.moveTo(x,ymin);
+			ctx.lineTo(x,ymax);
+			ctx.closePath();
+			ctx.stroke();
+		}
 
-		status("X=" + p.x.toFixed(8) + "<br>Y=" + p.y.toFixed(8) + "<br>Scale=" + scale.toFixed(1) + "[px/1]");
+		for(let y = ymin; y <= ymax; y += dy){
+			ctx.beginPath();
+			ctx.moveTo(xmin,y);
+			ctx.lineTo(xmax,y);
+			ctx.closePath();
+			ctx.stroke();
+		}
 	};
 	
-	//平行移動用(簡略化版)
-	const movingUpdate = function(di,dj){
+	//画面に表示された画像(移動中に表示させる)
+	const image = new Image();
+	
+	//移動しながらの簡易表示
+	const movingUpdate = function(p0,p1){
 		
-		//IJ座標系に直して処理
+		//IJ座標系で処理
 		ctx.save();
 		ctx.resetTransform();
 		ctx.clearRect(0, 0, width, height);
 		
-		ctx.translate(di, dj);
-		ctx.drawImage(image,0,0,width,height,0,0,width,height);
-		
-		ctx.restore();
-		
-		drawCenter();
-	};
-	
-	//ピンチインアウト版
-	const movingUpdate2 = function(p0,p1){
-		
-		//IJ座標系に直して処理
-		ctx.save();
-		ctx.resetTransform();
-		ctx.clearRect(0, 0, width, height);
-		
-		//p0sがp0e、p1sがp1eに一致するように平行移動回転拡大
-		ctx.translate(p0.ei,p0.ej);
-		
-		//p0を中心としてvsがveに一致するように回転拡大する座標変換
-		//移動前のp0→p1ベクトルvs、移動後のp0→p1ベクトルve
-		const vsi = p1.si - p0.si;
-		const vsj = p1.sj - p0.sj;
-		const vei = p1.ei - p0.ei;
-		const vej = p1.ej - p0.ej;
-		const k = 1 / (vsi * vsi + vsj * vsj);
-		const ad = vei * vsi + vej * vsj;
-		const bc = vej * vsi - vei * vsj;
-		ctx.transform(ad * k, bc * k, -bc * k, ad * k, 0, 0);
-
-		ctx.translate(-p0.ei,-p0.ej);
-
-		//p0の位置を合わせる
-		ctx.translate(p0.di,p0.dj);
+		pinchTransform.IJ(ctx,p0,p1);
 		
 		ctx.drawImage(image,0,0,width,height,0,0,width,height);
 		ctx.restore();
 		
 		drawCenter();
+		
+		//XY座標系で画面中心位置の状態を求めて表示
+		ctx.save();
+		pinchTransform.XY(ctx,p0,p1);
+		info();
+		ctx.restore();
 	};
 	
+	//移動完了後の再表示
 	const update = function(){
 		//IJ座標系に直して全画面消去
 		ctx.save();
@@ -349,8 +300,8 @@ module.exports = function(element,view,draw,status){
 		draw(ctx,width,height);
 		
 		//X,Y目盛り
-//		ctx.lineWidth = 0.5 / getScale();
-//		drawGrid(ctx,view.x.min,view.x.max,1,view.y.min,view.y.max,1);
+		//ctx.lineWidth = 0.5 / getScale();
+		//drawGrid(view.x.min,view.x.max,1,view.y.min,view.y.max,1);
 		
 		//IJ座標系に直して描画(文字サイズをピクセル単位で指定するため)
 		/*
@@ -378,6 +329,7 @@ module.exports = function(element,view,draw,status){
 		
 		//情報表示
 		info();
+		drawCenter();
 	};
 	
 	update();
