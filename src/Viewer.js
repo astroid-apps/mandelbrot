@@ -43,6 +43,7 @@ module.exports = function(element,view,draw,status){
 	let mtXY2IJ = ctx.getTransform();
 	let mtIJ2XY = ctx.getTransform().invertSelf();
 	
+	//getXY,getIJ,getScaleを呼び出す前に実行する必要あり
 	const updateMatrix = function(){
 		mtXY2IJ = ctx.getTransform();
 		mtIJ2XY = ctx.getTransform().invertSelf();
@@ -163,6 +164,7 @@ module.exports = function(element,view,draw,status){
 			pinchTransform.XY(ctx,pointers[0],pointers[1]);
 			
 			//ズーム制約
+			updateMatrix();
 			const p0s = getXY(pointers[0].si,pointers[0].sj);
 			const p1s = getXY(pointers[1].si,pointers[1].sj);
 			const cx = (p0s.x + p1s.x) * 0.5;
@@ -171,7 +173,6 @@ module.exports = function(element,view,draw,status){
 		}
 		
 		clampXY();
-		updateMatrix();
 		update();
 		
 		pointers = [];
@@ -187,6 +188,7 @@ module.exports = function(element,view,draw,status){
 	canvas.addEventListener("wheel",function(e){
 		
 		//マウスの位置pを中心にk倍する
+		updateMatrix();
 		const p = getXY(e.offsetX,e.offsetY);
 		const k = e.deltaY < 0 ? 1.4 : 1 / 1.4;
 		
@@ -196,7 +198,6 @@ module.exports = function(element,view,draw,status){
 		
 		clampScale(p);
 		clampXY();
-		updateMatrix();
 		update();
 	});
 	
