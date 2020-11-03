@@ -88,15 +88,16 @@ module.exports = function(element,view,draw,status){
 	//p: 拡大中心位置(XY座標)
 	const clampScale = function(p){
 		updateMatrix();
+		const scale = getScale();
 		
 		let k = 1;
 		
-		if(getScale() > view.scale.max){
-			k = view.scale.max / getScale();
+		if(scale > view.scale.max){
+			k = view.scale.max / scale;
 		};
-			
-		if(getScale() < view.scale.min){
-			k = view.scale.min / getScale();
+		
+		if(scale < view.scale.min){
+			k = view.scale.min / scale;
 		};
 		
 		ctx.translate(p.x, p.y);
@@ -164,12 +165,10 @@ module.exports = function(element,view,draw,status){
 			pinchTransform.XY(ctx,pointers[0],pointers[1]);
 			
 			//ズーム制約
+			const ci = (pointers[0].si + pointers[1].si) * 0.5;
+			const cj = (pointers[0].sj + pointers[1].sj) * 0.5;
 			updateMatrix();
-			const p0s = getXY(pointers[0].si,pointers[0].sj);
-			const p1s = getXY(pointers[1].si,pointers[1].sj);
-			const cx = (p0s.x + p1s.x) * 0.5;
-			const cy = (p0s.y + p1s.y) * 0.5;
-			clampScale({x:cx, y:cy});
+			clampScale(getXY(ci,cj));
 		}
 		
 		clampXY();
@@ -299,11 +298,12 @@ module.exports = function(element,view,draw,status){
 		
 		//XY座標で描画
 		draw(ctx,width,height);
-		
+
+
 		//X,Y目盛り
 		//ctx.lineWidth = 0.5 / getScale();
 		//drawGrid(view.x.min,view.x.max,1,view.y.min,view.y.max,1);
-		
+
 		//IJ座標系に直して描画(文字サイズをピクセル単位で指定するため)
 		/*
 		let mt = ctx.getTransform();
@@ -312,25 +312,25 @@ module.exports = function(element,view,draw,status){
 			const j = mt.b * x + mt.d * y + mt.f;
 			return {i,j};
 		};
-		
+
 		ctx.save();
 		ctx.resetTransform();
-		
+
 		const p = getIJ(0,0);
 		ctx.fillText("0",p.i,p.j);
-		
+
 		const p1 = getIJ(1,0);
 		ctx.fillText("1",p1.i,p1.j);
-		
+
 		ctx.restore();
 		*/
-		
+
 		//移動中表示用の画像保存
 		image.src = canvas.toDataURL();
-		
+
 		//情報表示
-		info();
 		drawCenter();
+		info();
 	};
 	
 	update();
