@@ -16,6 +16,11 @@ https://astroid-apps.github.io/mandelbrot/dist/
 
 ![sample](./sample/sample4.png)
 
+# Reference
+Multi Thread Version
+
+https://github.com/astroid-apps/mandelbrot-multi-thread
+
 # Link
 https://en.wikipedia.org/wiki/Mandelbrot_set
 
