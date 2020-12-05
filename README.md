@@ -17,6 +17,11 @@ https://astroid-apps.github.io/mandelbrot/dist/
 ![sample](./sample/sample4.png)
 
 # Reference
+
+WebGL Version (fastest rendering)
+
+https://github.com/astroid-apps/mandelbrot-webgl
+
 Multi Thread Version
 
 https://github.com/astroid-apps/mandelbrot-multi-thread
