@@ -6,13 +6,12 @@
 		<title>mandelbrot</title>
 		
 		<style>
-			html{
+			html, body, canvas, #viewer{
+				display: block;
+				width: 100%;
 				height: 100%;
-			}
-			
-			body{
-				margin: 0px;
-				height: 100%;
+				margin: 0;
+				padding: 0;
 			}
 			
 			#status{
@@ -24,15 +23,13 @@
 				padding: 3px;
 			}
 			
-			#viewer{
-				width:100%;
-				height:100%;
-			}
-			
-			@media all and (min-width: 500px){
-				#viewer{
+			@media all and (min-width: 800px){
+				html, body, canvas, #viewer{
+					display: block;
 					width:500px;
 					height:400px;
+					margin: 0;
+					padding: 0;
 				}
 			}
 		</style>
