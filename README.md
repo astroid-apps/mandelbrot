@@ -4,7 +4,7 @@ The mandelbrot set viewer
 ブラウザでマンデルブロ集合を表示するJavaScriptです。マウスやピンチイン・ピンチアウトで移動拡大表示が可能です。
 
 # Demo
-https://astroid-apps.github.io/mandelbrot/dist/
+https://astroid-apps.github.io/mandelbrot/
 
 # Sample
 
